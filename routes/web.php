@@ -1,0 +1,23 @@
+<?php
+
+use Illuminate\Support\Facades\Route;
+
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\AnnonceController;
+
+Route::get('/', [AnnonceController::class, 'index'])->name('home');
+
+Route::middleware(['auth'])->group(function () {
+    Route::get('/annonces/create', [AnnonceController::class, 'create'])->name('annonces.create');
+    Route::post('/annonces', [AnnonceController::class, 'store'])->name('annonces.store');
+});
+
+Route::get('/annonces/{annonce}', [AnnonceController::class, 'show'])->name('annonces.show');
+
+Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
+Route::post('/register', [AuthController::class, 'register']);
+
+Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
+Route::post('/login', [AuthController::class, 'login']);
+
+Route::post('/logout', [AuthController::class, 'logout'])->name('logout');

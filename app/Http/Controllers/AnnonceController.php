@@ -1,0 +1,52 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Annonce;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+
+class AnnonceController extends Controller
+{
+    public function index()
+    {
+        $annonces = Annonce::latest()->get();
+        return view('annonces.index', compact('annonces'));
+    }
+
+    public function create()
+    {
+        return view('annonces.create');
+    }
+
+    public function store(Request $request)
+    {
+        $request->validate([
+            'titre' => 'required|string|max:255',
+            'description' => 'required|string',
+            'adresse' => 'required|string|max:255',
+            'ville' => 'required|string|max:255',
+            'prix_par_nuit' => 'required|numeric|min:0',
+            'nombre_de_chambres' => 'required|integer|min:1',
+            'image_url' => 'nullable|url', // On utilise une URL pour rester simple sans gestion complexe de fichiers pour l'instant
+        ]);
+
+        Annonce::create([
+            'user_id' => Auth::id(),
+            'titre' => $request->titre,
+            'description' => $request->description,
+            'adresse' => $request->adresse,
+            'ville' => $request->ville,
+            'prix_par_nuit' => $request->prix_par_nuit,
+            'nombre_de_chambres' => $request->nombre_de_chambres,
+            'image' => $request->image_url,
+        ]);
+
+        return redirect()->route('home')->with('success', 'Annonce publiée avec succès !');
+    }
+
+    public function show(Annonce $annonce)
+    {
+        return view('annonces.show', compact('annonce'));
+    }
+}
