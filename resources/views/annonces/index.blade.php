@@ -34,6 +34,30 @@
             </div>
         @endif
 
+        <!-- Barre de recherche -->
+        <div class="mb-10 bg-white p-4 rounded-full shadow-lg border flex items-center max-w-4xl mx-auto">
+            <form action="{{ route('home') }}" method="GET" class="flex w-full items-center">
+                <div class="flex-1 px-4 border-r">
+                    <label class="block text-[10px] font-bold uppercase text-gray-500">Destination</label>
+                    <input type="text" name="ville" value="{{ request('ville') }}" placeholder="Où allez-vous ?" class="w-full outline-none text-sm">
+                </div>
+                <div class="flex-1 px-4 border-r">
+                    <label class="block text-[10px] font-bold uppercase text-gray-500">Prix Max</label>
+                    <input type="number" name="prix_max" value="{{ request('prix_max') }}" placeholder="Budget max" class="w-full outline-none text-sm">
+                </div>
+                <div class="px-4">
+                    <button type="submit" class="bg-rose-500 text-white p-3 rounded-full hover:bg-rose-600 transition">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                    </button>
+                </div>
+                @if(request()->anyFilled(['ville', 'prix_max']))
+                    <a href="{{ route('home') }}" class="text-xs text-gray-500 underline ml-2">Effacer</a>
+                @endif
+            </form>
+        </div>
+
         <h1 class="text-3xl font-bold mb-8">Découvrez votre prochain séjour</h1>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">

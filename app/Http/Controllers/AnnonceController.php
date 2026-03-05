@@ -9,9 +9,19 @@ use Illuminate\Support\Facades\Storage;
 
 class AnnonceController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $annonces = Annonce::latest()->get();
+        $query = Annonce::latest();
+
+        if ($request->filled('ville')) {
+            $query->where('ville', 'like', '%' . $request->ville . '%');
+        }
+
+        if ($request->filled('prix_max')) {
+            $query->where('prix_par_nuit', '<=', $request->prix_max);
+        }
+
+        $annonces = $query->get();
         return view('annonces.index', compact('annonces'));
     }
 
