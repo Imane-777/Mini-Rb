@@ -1,3 +1,7 @@
+// Reservation status management
+Route::patch('/reservations/{id}/accept', [\App\Http\Controllers\ReservationController::class, 'accept'])->middleware('auth')->name('reservations.accept');
+Route::patch('/reservations/{id}/refuse', [\App\Http\Controllers\ReservationController::class, 'refuse'])->middleware('auth')->name('reservations.refuse');
+Route::patch('/reservations/{id}/cancel', [\App\Http\Controllers\ReservationController::class, 'cancel'])->middleware('auth')->name('reservations.cancel');
 <?php
 
 use Illuminate\Support\Facades\Route;

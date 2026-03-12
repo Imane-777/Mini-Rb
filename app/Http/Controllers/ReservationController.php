@@ -19,7 +19,6 @@ class ReservationController extends Controller
 
         $annonce = Annonce::findOrFail($annonceId);
 
-        // Check for overlapping reservations
         $overlap = Reservation::where('annonce_id', $annonce->id)
             ->where(function ($query) use ($request) {
                 $query->whereBetween('start_date', [$request->start_date, $request->end_date])
@@ -36,8 +35,7 @@ class ReservationController extends Controller
             return back()->withErrors(['dates' => 'Ces dates sont déjà réservées pour cette annonce.']);
         }
 
-        // Calculate total price using model method
-        $total = \App\Models\Reservation::calculateTotalPrice($request->start_date, $request->end_date, $annonce->prix_par_nuit);
+        $total = Reservation::calculateTotalPrice($request->start_date, $request->end_date, $annonce->prix_par_nuit);
 
         Reservation::create([
             'annonce_id' => $annonce->id,
@@ -48,9 +46,42 @@ class ReservationController extends Controller
             'status' => 'pending',
         ]);
 
-        // Example: get blocked dates (not used here, but available)
-        // $blockedDates = \App\Models\Reservation::getBlockedDates($annonce->id);
-
         return redirect()->route('annonces.show', $annonce)->with('success', 'Réservation demandée !');
+    }
+
+    // Accept a reservation (host only)
+    public function accept($id)
+    {
+        $reservation = Reservation::findOrFail($id);
+        if (Auth::id() !== $reservation->annonce->user_id) {
+            return back()->with('error', 'Seul l\'hôte peut accepter la réservation.');
+        }
+        $reservation->status = 'accepted';
+        $reservation->save();
+        return back()->with('success', 'Réservation acceptée.');
+    }
+
+    // Refuse a reservation (host only)
+    public function refuse($id)
+    {
+        $reservation = Reservation::findOrFail($id);
+        if (Auth::id() !== $reservation->annonce->user_id) {
+            return back()->with('error', 'Seul l\'hôte peut refuser la réservation.');
+        }
+        $reservation->status = 'refused';
+        $reservation->save();
+        return back()->with('success', 'Réservation refusée.');
+    }
+
+    // Cancel a reservation (traveler only)
+    public function cancel($id)
+    {
+        $reservation = Reservation::findOrFail($id);
+        if (Auth::id() !== $reservation->user_id) {
+            return back()->with('error', 'Seul le voyageur peut annuler sa réservation.');
+        }
+        $reservation->status = 'cancelled';
+        $reservation->save();
+        return back()->with('success', 'Réservation annulée.');
     }
 }
