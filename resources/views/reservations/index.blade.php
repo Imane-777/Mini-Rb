@@ -48,7 +48,7 @@
                     {{-- Image --}}
                     <div class="w-full md:w-36 h-28 rounded-xl overflow-hidden flex-shrink-0">
                         @if($reservation->annonce->image)
-                            <img src="{{ Storage::url($reservation->annonce->image) }}" class="w-full h-full object-cover">
+                            <img src="{{ Storage::disk('s3')->url($reservation->annonce->image) }}" class="w-full h-full object-cover">
                         @else
                             <div class="w-full h-full bg-gray-200 flex items-center justify-center text-gray-400 text-sm">Pas d'image</div>
                         @endif
@@ -127,7 +127,7 @@
                     {{-- Image --}}
                     <div class="w-full md:w-36 h-28 rounded-xl overflow-hidden flex-shrink-0">
                         @if($reservation->annonce->image)
-                            <img src="{{ Storage::url($reservation->annonce->image) }}" class="w-full h-full object-cover">
+                            <img src="{{ Storage::disk('s3')->url($reservation->annonce->image) }}" class="w-full h-full object-cover">
                         @else
                             <div class="w-full h-full bg-gray-200 flex items-center justify-center text-gray-400 text-sm">Pas d'image</div>
                         @endif

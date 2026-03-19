@@ -69,7 +69,7 @@
                 <a href="{{ route('annonces.show', $annonce) }}" class="group">
                     <div class="aspect-square overflow-hidden rounded-xl mb-3">
                         @if($annonce->image)
-                            <img src="{{ Storage::url($annonce->image) }}" alt="{{ $annonce->titre }}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
+                            <img src="{{ Storage::disk('s3')->url($annonce->image) }}" alt="{{ $annonce->titre }}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
                         @else
                             <img src="https://via.placeholder.com/400x400?text=Pas+d+image" alt="{{ $annonce->titre }}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
                         @endif

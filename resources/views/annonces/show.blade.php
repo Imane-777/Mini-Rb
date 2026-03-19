@@ -47,7 +47,7 @@
 
         <div class="rounded-2xl overflow-hidden mb-10 h-[500px]">
             @if($annonce->image)
-                <img src="{{ Storage::url($annonce->image) }}" alt="{{ $annonce->titre }}" class="w-full h-full object-cover">
+                <img src="{{ Storage::disk('s3')->url($annonce->image) }}" alt="{{ $annonce->titre }}" class="w-full h-full object-cover">
             @else
                 <div class="w-full h-full bg-gray-200 flex items-center justify-center">
                     <span class="text-gray-400 text-xl">Pas d'image</span>

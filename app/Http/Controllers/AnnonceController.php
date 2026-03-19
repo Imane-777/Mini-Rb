@@ -47,7 +47,7 @@ class AnnonceController extends Controller
 
         $imagePath = null;
         if ($request->hasFile('image')) {
-            $imagePath = $request->file('image')->store('annonces', 'public');
+            $imagePath = $request->file('image')->store('annonces', 's3');
         }
 
         Annonce::create([
@@ -101,9 +101,9 @@ class AnnonceController extends Controller
 
         if ($request->hasFile('image')) {
             if ($annonce->image) {
-                Storage::disk('public')->delete($annonce->image);
+                Storage::disk('s3')->delete($annonce->image);
             }
-            $data['image'] = $request->file('image')->store('annonces', 'public');
+            $data['image'] = $request->file('image')->store('annonces', 's3');
         }
 
         $annonce->update($data);
@@ -116,7 +116,7 @@ class AnnonceController extends Controller
         $this->authorize('delete', $annonce);
         
         if ($annonce->image) {
-            Storage::disk('public')->delete($annonce->image);
+            Storage::disk('s3')->delete($annonce->image);
         }
         
         $annonce->delete();
