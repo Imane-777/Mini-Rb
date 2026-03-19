@@ -8,8 +8,6 @@ use App\Http\Controllers\AvisController;
 
 Route::get('/', [AnnonceController::class, 'index'])->name('home');
 
-Route::get('/annonces/{annonce}', [AnnonceController::class, 'show'])->name('annonces.show');
-
 Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
 Route::post('/register', [AuthController::class, 'register']);
 
@@ -42,3 +40,5 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/admin/users/{id}', [\App\Http\Controllers\AdminController::class, 'deleteUser'])->name('admin.users.delete');
     Route::delete('/admin/annonces/{id}', [\App\Http\Controllers\AdminController::class, 'deleteAnnonce'])->name('admin.annonces.delete');
 });
+
+Route::get('/annonces/{annonce}', [AnnonceController::class, 'show'])->name('annonces.show');
