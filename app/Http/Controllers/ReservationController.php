@@ -4,8 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\Reservation;
 use App\Models\Annonce;
+use App\Mail\ReservationCreated;
+use App\Mail\ReservationStatusChanged;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
 
 class ReservationController extends Controller
 {
@@ -14,13 +17,11 @@ class ReservationController extends Controller
     {
         $user = Auth::user();
 
-        // Reservations the user made as a traveler
         $mesReservations = Reservation::with(['annonce', 'avis'])
             ->where('user_id', $user->id)
             ->latest()
             ->get();
 
-        // Reservations on the user's own listings (as host)
         $reservationsRecues = Reservation::with(['annonce', 'user', 'avis'])
             ->whereHas('annonce', function ($q) use ($user) {
                 $q->where('user_id', $user->id);
@@ -36,12 +37,11 @@ class ReservationController extends Controller
     {
         $request->validate([
             'start_date' => 'required|date|after_or_equal:today',
-            'end_date' => 'required|date|after:start_date',
+            'end_date'   => 'required|date|after:start_date',
         ]);
 
         $annonce = Annonce::findOrFail($annonceId);
 
-        // Prevent host from booking their own listing
         if (Auth::id() === $annonce->user_id) {
             return back()->withErrors(['dates' => 'Vous ne pouvez pas réserver votre propre logement.']);
         }
@@ -64,14 +64,17 @@ class ReservationController extends Controller
 
         $total = Reservation::calculateTotalPrice($request->start_date, $request->end_date, $annonce->prix_par_nuit);
 
-        Reservation::create([
-            'annonce_id' => $annonce->id,
-            'user_id' => Auth::id(),
-            'start_date' => $request->start_date,
-            'end_date' => $request->end_date,
+        $reservation = Reservation::create([
+            'annonce_id'  => $annonce->id,
+            'user_id'     => Auth::id(),
+            'start_date'  => $request->start_date,
+            'end_date'    => $request->end_date,
             'total_price' => $total,
-            'status' => 'pending',
+            'status'      => 'pending',
         ]);
+
+        // Notify host of new reservation
+        Mail::to($annonce->user->email)->send(new ReservationCreated($reservation->load(['annonce', 'user'])));
 
         return redirect()->route('annonces.show', $annonce)->with('success', 'Réservation demandée avec succès !');
     }
@@ -79,39 +82,58 @@ class ReservationController extends Controller
     // Accept a reservation (host only)
     public function accept($id)
     {
-        $reservation = Reservation::findOrFail($id);
+        $reservation = Reservation::with(['annonce', 'user'])->findOrFail($id);
+
         if (Auth::id() !== $reservation->annonce->user_id) {
             return back()->with('error', 'Seul l\'hôte peut accepter la réservation.');
         }
+
         $reservation->status = 'accepted';
         $reservation->save();
+
+        // Notify traveler
+        Mail::to($reservation->user->email)->send(new ReservationStatusChanged($reservation));
+
         return back()->with('success', 'Réservation acceptée.');
     }
 
     // Refuse a reservation (host only)
     public function refuse($id)
     {
-        $reservation = Reservation::findOrFail($id);
+        $reservation = Reservation::with(['annonce', 'user'])->findOrFail($id);
+
         if (Auth::id() !== $reservation->annonce->user_id) {
             return back()->with('error', 'Seul l\'hôte peut refuser la réservation.');
         }
+
         $reservation->status = 'refused';
         $reservation->save();
+
+        // Notify traveler
+        Mail::to($reservation->user->email)->send(new ReservationStatusChanged($reservation));
+
         return back()->with('success', 'Réservation refusée.');
     }
 
     // Cancel a reservation (traveler only)
     public function cancel($id)
     {
-        $reservation = Reservation::findOrFail($id);
+        $reservation = Reservation::with(['annonce', 'user'])->findOrFail($id);
+
         if (Auth::id() !== $reservation->user_id) {
             return back()->with('error', 'Seul le voyageur peut annuler sa réservation.');
         }
+
         if (!in_array($reservation->status, ['pending', 'accepted'])) {
             return back()->with('error', 'Cette réservation ne peut pas être annulée.');
         }
+
         $reservation->status = 'cancelled';
         $reservation->save();
+
+        // Notify host
+        Mail::to($reservation->annonce->user->email)->send(new ReservationStatusChanged($reservation));
+
         return back()->with('success', 'Réservation annulée.');
     }
 }
