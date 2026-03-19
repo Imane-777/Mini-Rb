@@ -9,6 +9,28 @@ use Illuminate\Support\Facades\Auth;
 
 class ReservationController extends Controller
 {
+    // List reservations for current user (as traveler or host)
+    public function index()
+    {
+        $user = Auth::user();
+
+        // Reservations the user made as a traveler
+        $mesReservations = Reservation::with(['annonce', 'avis'])
+            ->where('user_id', $user->id)
+            ->latest()
+            ->get();
+
+        // Reservations on the user's own listings (as host)
+        $reservationsRecues = Reservation::with(['annonce', 'user', 'avis'])
+            ->whereHas('annonce', function ($q) use ($user) {
+                $q->where('user_id', $user->id);
+            })
+            ->latest()
+            ->get();
+
+        return view('reservations.index', compact('mesReservations', 'reservationsRecues'));
+    }
+
     // Store a new reservation with availability check
     public function store(Request $request, $annonceId)
     {
@@ -18,6 +40,11 @@ class ReservationController extends Controller
         ]);
 
         $annonce = Annonce::findOrFail($annonceId);
+
+        // Prevent host from booking their own listing
+        if (Auth::id() === $annonce->user_id) {
+            return back()->withErrors(['dates' => 'Vous ne pouvez pas réserver votre propre logement.']);
+        }
 
         $overlap = Reservation::where('annonce_id', $annonce->id)
             ->where(function ($query) use ($request) {
@@ -46,7 +73,7 @@ class ReservationController extends Controller
             'status' => 'pending',
         ]);
 
-        return redirect()->route('annonces.show', $annonce)->with('success', 'Réservation demandée !');
+        return redirect()->route('annonces.show', $annonce)->with('success', 'Réservation demandée avec succès !');
     }
 
     // Accept a reservation (host only)
@@ -79,6 +106,9 @@ class ReservationController extends Controller
         $reservation = Reservation::findOrFail($id);
         if (Auth::id() !== $reservation->user_id) {
             return back()->with('error', 'Seul le voyageur peut annuler sa réservation.');
+        }
+        if (!in_array($reservation->status, ['pending', 'accepted'])) {
+            return back()->with('error', 'Cette réservation ne peut pas être annulée.');
         }
         $reservation->status = 'cancelled';
         $reservation->save();

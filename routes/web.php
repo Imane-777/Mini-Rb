@@ -1,26 +1,13 @@
-// Reservation status management
-Route::patch('/reservations/{id}/accept', [\App\Http\Controllers\ReservationController::class, 'accept'])->middleware('auth')->name('reservations.accept');
-Route::patch('/reservations/{id}/refuse', [\App\Http\Controllers\ReservationController::class, 'refuse'])->middleware('auth')->name('reservations.refuse');
-Route::patch('/reservations/{id}/cancel', [\App\Http\Controllers\ReservationController::class, 'cancel'])->middleware('auth')->name('reservations.cancel');
 <?php
 
 use Illuminate\Support\Facades\Route;
-
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AnnonceController;
+use App\Http\Controllers\ReservationController;
+use App\Http\Controllers\AvisController;
 
 Route::get('/', [AnnonceController::class, 'index'])->name('home');
 
-Route::middleware(['auth'])->group(function () {
-    Route::get('/annonces/create', [AnnonceController::class, 'create'])->name('annonces.create');
-    Route::post('/annonces', [AnnonceController::class, 'store'])->name('annonces.store');
-    Route::get('/annonces/{annonce}/edit', [AnnonceController::class, 'edit'])->name('annonces.edit');
-    Route::put('/annonces/{annonce}', [AnnonceController::class, 'update'])->name('annonces.update');
-    Route::delete('/annonces/{annonce}', [AnnonceController::class, 'destroy'])->name('annonces.destroy');
-});
-
-
-Route::post('/annonces/{annonce}/reserver', [\App\Http\Controllers\ReservationController::class, 'store'])->middleware('auth')->name('reservations.store');
 Route::get('/annonces/{annonce}', [AnnonceController::class, 'show'])->name('annonces.show');
 
 Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
@@ -30,3 +17,23 @@ Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);
 
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
+Route::middleware(['auth'])->group(function () {
+    // Annonces CRUD
+    Route::get('/annonces/create', [AnnonceController::class, 'create'])->name('annonces.create');
+    Route::post('/annonces', [AnnonceController::class, 'store'])->name('annonces.store');
+    Route::get('/annonces/{annonce}/edit', [AnnonceController::class, 'edit'])->name('annonces.edit');
+    Route::put('/annonces/{annonce}', [AnnonceController::class, 'update'])->name('annonces.update');
+    Route::delete('/annonces/{annonce}', [AnnonceController::class, 'destroy'])->name('annonces.destroy');
+
+    // Reservations
+    Route::post('/annonces/{annonce}/reserver', [ReservationController::class, 'store'])->name('reservations.store');
+    Route::get('/mes-reservations', [ReservationController::class, 'index'])->name('reservations.index');
+    Route::patch('/reservations/{id}/accept', [ReservationController::class, 'accept'])->name('reservations.accept');
+    Route::patch('/reservations/{id}/refuse', [ReservationController::class, 'refuse'])->name('reservations.refuse');
+    Route::patch('/reservations/{id}/cancel', [ReservationController::class, 'cancel'])->name('reservations.cancel');
+
+    // Avis (reviews)
+    Route::post('/reservations/{id}/avis', [AvisController::class, 'store'])->name('avis.store');
+    Route::delete('/avis/{id}', [AvisController::class, 'destroy'])->name('avis.destroy');
+});

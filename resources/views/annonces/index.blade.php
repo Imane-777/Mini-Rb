@@ -12,6 +12,7 @@
         <a href="{{ route('home') }}" class="text-rose-500 font-bold text-2xl">Mini-Rb</a>
         <div class="flex items-center space-x-4">
             @auth
+                <a href="{{ route('reservations.index') }}" class="text-gray-700 font-semibold hover:text-rose-500 transition">Mes Réservations</a>
                 <a href="{{ route('annonces.create') }}" class="text-gray-700 font-semibold hover:text-rose-500 transition">Mettre mon logement sur Mini-Rb</a>
                 <span class="text-gray-400">|</span>
                 <span class="text-gray-700 font-semibold">{{ Auth::user()->name }}</span>

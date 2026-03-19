@@ -4,21 +4,16 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use App\Models\Reservation;
 
-class Annonce extends Model
+class Avis extends Model
 {
     use HasFactory;
 
     protected $fillable = [
+        'reservation_id',
         'user_id',
-        'titre',
-        'description',
-        'adresse',
-        'ville',
-        'prix_par_nuit',
-        'image',
-        'nombre_de_chambres'
+        'rating',
+        'comment',
     ];
 
     public function user()
@@ -26,8 +21,8 @@ class Annonce extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function reservations()
+    public function reservation()
     {
-        return $this->hasMany(Reservation::class);
+        return $this->belongsTo(Reservation::class);
     }
 }

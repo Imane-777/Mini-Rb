@@ -66,6 +66,7 @@ class AnnonceController extends Controller
 
     public function show(Annonce $annonce)
     {
+        $annonce->load(['reservations.avis.user', 'reservations.user']);
         return view('annonces.show', compact('annonce'));
     }
 

@@ -28,6 +28,11 @@ class Reservation extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function avis()
+    {
+        return $this->hasMany(\App\Models\Avis::class);
+    }
+
     public static function getBlockedDates($annonceId)
     {
         $blocked = [];
