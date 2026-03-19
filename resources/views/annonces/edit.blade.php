@@ -62,7 +62,7 @@
                     <input type="file" name="image" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-rose-500 outline-none" accept="image/*">
                     @if($annonce->image)
                         <p class="text-xs text-gray-500 mt-2 text-center">Image actuelle :</p>
-                        <img src="{{ Storage::url($annonce->image) }}" class="h-20 mx-auto rounded mt-1">
+                        <img src="{{ Storage::disk('s3')->url($annonce->image) }}" class="h-20 mx-auto rounded mt-1">
                     @endif
                 </div>
             </div>

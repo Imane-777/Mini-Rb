@@ -48,7 +48,11 @@
         </div>
 
         <div class="flex items-center space-x-4">
-            @auth
+                @auth
+                @if(Auth::user()->role === 'admin')
+                    <a href="{{ route('admin.index') }}" class="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-sm font-semibold hover:bg-purple-200 transition">Dashboard Admin</a>
+                @endif
+                <a href="{{ route('reservations.index') }}" class="text-gray-700 font-semibold hover:text-rose-500 transition">Mes Réservations</a>
                 <a href="{{ route('annonces.create') }}" class="text-gray-700 font-semibold hover:text-rose-500 transition">Mettre mon logement sur Mini-Rb</a>
                 <span class="text-gray-400">|</span>
                 <span class="text-gray-700 font-semibold">{{ Auth::user()->name }}</span>
@@ -122,7 +126,7 @@
                 <a href="{{ route('annonces.show', $annonce) }}" class="group block">
                     <div class="aspect-square overflow-hidden rounded-xl mb-3">
                         @if($annonce->image)
-                            <img src="{{ Storage::url($annonce->image) }}" alt="{{ $annonce->titre }}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
+                            <img src="{{ Storage::disk('s3')->url($annonce->image) }}" alt="{{ $annonce->titre }}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
                         @else
                             <img src="https://via.placeholder.com/400x400?text=Pas+d+image" alt="{{ $annonce->titre }}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
                         @endif

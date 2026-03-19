@@ -3,9 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Mail\WelcomeMail;
+use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 
 class AuthController extends Controller
 {
@@ -17,22 +20,27 @@ class AuthController extends Controller
     public function register(Request $request)
     {
         $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
+            'name'     => 'required|string|max:255',
+            'email'    => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8|confirmed',
-            'role' => 'required|string|in:voyageur,hote,admin',
         ]);
 
         $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
+            'name'     => $request->name,
+            'email'    => $request->email,
             'password' => Hash::make($request->password),
-            'role' => $request->role,
+            'role'     => 'user',
         ]);
+
+        // Send email verification
+        event(new Registered($user));
+
+        // Send welcome email
+        Mail::to($user->email)->send(new WelcomeMail($user));
 
         Auth::login($user);
 
-        return redirect()->route('home');
+        return redirect()->route('verification.notice');
     }
 
     public function showLogin()
@@ -43,13 +51,19 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $credentials = $request->validate([
-            'email' => 'required|string|email',
+            'email'    => 'required|string|email',
             'password' => 'required|string',
         ]);
 
         if (Auth::attempt($credentials)) {
             $request->session()->regenerate();
-            return redirect()->intended('home');
+
+            // Redirect to verification notice if not verified
+            if (!Auth::user()->hasVerifiedEmail()) {
+                return redirect()->route('verification.notice');
+            }
+
+            return redirect()->route('home');
         }
 
         return back()->withErrors([
