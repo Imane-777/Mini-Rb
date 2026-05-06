@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vérification email - Mini-Rb</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <meta http-equiv="refresh" content="5">
 </head>
 <body class="bg-gray-100 min-h-screen flex items-center justify-center">
     <div class="bg-white p-8 rounded-2xl shadow-md w-full max-w-md text-center">
@@ -12,10 +13,11 @@
 
         <div class="text-5xl mb-4">📧</div>
         <h2 class="text-2xl font-bold mb-2">Vérifiez votre email</h2>
-        <p class="text-gray-500 mb-6">
+        <p class="text-gray-500 mb-2">
             Nous avons envoyé un lien de vérification à votre adresse email.
             Cliquez sur le lien pour activer votre compte.
         </p>
+        <p class="text-gray-400 text-sm mb-6">Cette page se rafraîchit automatiquement toutes les 5 secondes.</p>
 
         @if(session('success'))
             <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
@@ -36,6 +38,9 @@
                 Se déconnecter
             </button>
         </form>
+        <a href="{{ route('home') }}" class="block mt-3 text-rose-500 hover:text-rose-700 font-semibold text-sm">
+    Retourner à l'accueil →
+</a>
     </div>
 </body>
 </html>

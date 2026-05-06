@@ -9,34 +9,41 @@ use Illuminate\Support\Facades\Auth;
 
 class AvisController extends Controller
 {
-    // Store a new review
     public function store(Request $request, $reservationId)
     {
         $reservation = Reservation::findOrFail($reservationId);
+
         if ($reservation->user_id !== Auth::id() || $reservation->status !== 'accepted') {
-            return back()->with('error', 'Vous ne pouvez laisser un avis que pour vos réservations acceptées.');
+            return response()->json([
+                'message' => 'Vous ne pouvez laisser un avis que pour vos réservations acceptées.',
+            ], 403);
         }
+
         $validated = $request->validate([
-            'rating' => 'required|integer|min:1|max:5',
+            'rating'  => 'required|integer|min:1|max:5',
             'comment' => 'required|string',
         ]);
+
         Avis::create([
             'reservation_id' => $reservation->id,
-            'user_id' => Auth::id(),
-            'rating' => $validated['rating'],
-            'comment' => $validated['comment'],
+            'user_id'        => Auth::id(),
+            'rating'         => $validated['rating'],
+            'comment'        => $validated['comment'],
         ]);
-        return back()->with('success', 'Avis ajouté avec succès.');
+
+        return response()->json(['message' => 'Avis ajouté avec succès.'], 201);
     }
 
-    // Delete a review
     public function destroy($id)
     {
         $avis = Avis::findOrFail($id);
+
         if ($avis->user_id !== Auth::id()) {
-            return back()->with('error', 'Vous ne pouvez supprimer que vos propres avis.');
+            return response()->json(['message' => 'Vous ne pouvez supprimer que vos propres avis.'], 403);
         }
+
         $avis->delete();
-        return back()->with('success', 'Avis supprimé.');
+
+        return response()->json(['message' => 'Avis supprimé.']);
     }
 }

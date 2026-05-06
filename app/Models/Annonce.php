@@ -30,4 +30,9 @@ class Annonce extends Model
     {
         return $this->hasMany(Reservation::class);
     }
+
+    public function images()
+    {
+        return $this->hasMany(AnnonceImage::class)->orderBy('position');
+    }
 }
