@@ -4,39 +4,55 @@ namespace App\Http\Controllers;
 
 use App\Models\Avis;
 use App\Models\Reservation;
+use App\Http\Requests\StoreAvisRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class AvisController extends Controller
 {
-    // Store a new review
-    public function store(Request $request, $reservationId)
+    public function store(StoreAvisRequest $request, $reservationId)
     {
         $reservation = Reservation::findOrFail($reservationId);
+
         if ($reservation->user_id !== Auth::id() || $reservation->status !== 'accepted') {
-            return back()->with('error', 'Vous ne pouvez laisser un avis que pour vos réservations acceptées.');
+            return response()->json([
+                'message' => 'Vous ne pouvez laisser un avis que pour vos réservations acceptées.',
+            ], 403);
         }
-        $validated = $request->validate([
-            'rating' => 'required|integer|min:1|max:5',
-            'comment' => 'required|string',
-        ]);
+
+        $validated = $request->validated();
+
+        $overall = round((
+            $validated['rating_cleanliness'] +
+            $validated['rating_communication'] +
+            $validated['rating_location'] +
+            $validated['rating_value']
+        ) / 4);
+
         Avis::create([
-            'reservation_id' => $reservation->id,
-            'user_id' => Auth::id(),
-            'rating' => $validated['rating'],
-            'comment' => $validated['comment'],
+            'reservation_id'       => $reservation->id,
+            'user_id'              => Auth::id(),
+            'rating'               => $overall,
+            'rating_cleanliness'   => $validated['rating_cleanliness'],
+            'rating_communication' => $validated['rating_communication'],
+            'rating_location'      => $validated['rating_location'],
+            'rating_value'         => $validated['rating_value'],
+            'comment'              => $validated['comment'],
         ]);
-        return back()->with('success', 'Avis ajouté avec succès.');
+
+        return response()->json(['message' => 'Avis ajouté avec succès.'], 201);
     }
 
-    // Delete a review
     public function destroy($id)
     {
         $avis = Avis::findOrFail($id);
+
         if ($avis->user_id !== Auth::id()) {
-            return back()->with('error', 'Vous ne pouvez supprimer que vos propres avis.');
+            return response()->json(['message' => 'Vous ne pouvez supprimer que vos propres avis.'], 403);
         }
+
         $avis->delete();
-        return back()->with('success', 'Avis supprimé.');
+
+        return response()->json(['message' => 'Avis supprimé.']);
     }
 }

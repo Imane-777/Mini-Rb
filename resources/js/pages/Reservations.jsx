@@ -1,0 +1,239 @@
+import { useEffect, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
+import toast from 'react-hot-toast';
+import api from '../api';
+import Layout from '../components/Layout';
+import { ListSkeleton } from '../components/Skeleton';
+
+const STATUS_COLORS = {
+    pending: 'bg-yellow-100 text-yellow-700',
+    accepted: 'bg-green-100 text-green-700',
+    refused: 'bg-red-100 text-red-600',
+    cancelled: 'bg-gray-100 text-gray-500',
+};
+
+const STATUS_LABELS = {
+    pending: 'En attente',
+    accepted: 'Acceptée',
+    refused: 'Refusée',
+    cancelled: 'Annulée',
+};
+
+const formatDate = (d) => new Date(d).toLocaleDateString('fr-FR');
+
+export default function Reservations() {
+    const [data, setData] = useState(null);
+    const [searchParams, setSearchParams] = useSearchParams();
+
+    const load = () => api.get('/reservations').then((res) => setData(res.data));
+
+    useEffect(() => { load(); }, []);
+
+    useEffect(() => {
+        const paid = searchParams.get('paid');
+        const cancelled = searchParams.get('cancelled');
+        const reservationId = searchParams.get('reservation_id');
+        const sessionId = searchParams.get('session_id');
+
+        const cleanupParams = () => {
+            const next = new URLSearchParams(searchParams);
+            ['paid', 'cancelled', 'reservation_id', 'session_id'].forEach((k) => next.delete(k));
+            setSearchParams(next, { replace: true });
+        };
+
+        if (cancelled) {
+            toast.error('Paiement annulé.');
+            cleanupParams();
+        } else if (paid && reservationId && sessionId) {
+            api.get(`/reservations/${reservationId}/payment-success`, { params: { session_id: sessionId } })
+                .then((res) => {
+                    if (res.data.paid) {
+                        toast.success(res.data.message || 'Paiement confirmé !');
+                        load();
+                    } else {
+                        toast.error(res.data.message || 'Paiement non confirmé.');
+                    }
+                })
+                .catch((err) => {
+                    toast.error(err.response?.data?.message || 'Erreur lors de la vérification du paiement.');
+                })
+                .finally(cleanupParams);
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    const callAction = async (url, method = 'patch') => {
+        try {
+            const { data: res } = await api({ url, method });
+            toast.success(res.message);
+            load();
+        } catch (err) {
+            toast.error(err.response?.data?.message || 'Erreur.');
+        }
+    };
+
+    const handlePay = async (reservationId) => {
+        try {
+            const { data: res } = await api.post(`/reservations/${reservationId}/checkout`);
+            window.location.href = res.checkout_url;
+        } catch (err) {
+            toast.error(err.response?.data?.message || 'Erreur lors du paiement.');
+        }
+    };
+
+    if (!data) return <Layout><div className="max-w-5xl mx-auto px-8 py-10"><h1 className="text-3xl font-bold mb-10">Mes Réservations</h1><ListSkeleton /></div></Layout>;
+
+    const { mes_reservations, reservations_recues } = data;
+
+    return (
+        <Layout>
+            <main className="max-w-5xl mx-auto px-8 py-10">
+                <h1 className="text-3xl font-bold mb-10">Mes Réservations</h1>
+
+                <div className="mb-14">
+                    <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
+                        <span>✈️</span> Mes voyages
+                        <span className="text-sm font-normal text-gray-400">({mes_reservations.length})</span>
+                    </h2>
+
+                    {mes_reservations.length === 0 ? (
+                        <div className="bg-white rounded-2xl border p-10 text-center text-gray-400">
+                            Vous n'avez pas encore effectué de réservation.
+                            <Link to="/" className="block mt-2 text-rose-500 font-semibold hover:underline">
+                                Découvrir des logements
+                            </Link>
+                        </div>
+                    ) : (
+                        mes_reservations.map((r) => (
+                            <ReservationCard
+                                key={r.id}
+                                reservation={r}
+                                actions={
+                                    <>
+                                        {r.status === 'accepted' && !r.paid_at && (
+                                            <button
+                                                onClick={() => handlePay(r.id)}
+                                                className="bg-rose-500 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-rose-600 transition"
+                                            >
+                                                Payer {r.total_price} MAD
+                                            </button>
+                                        )}
+                                        {r.paid_at && (
+                                            <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-semibold">
+                                                ✓ Payé
+                                            </span>
+                                        )}
+                                        {['pending', 'accepted'].includes(r.status) && !r.paid_at && (
+                                            <button
+                                                onClick={() => {
+                                                    if (confirm('Annuler cette réservation ?')) {
+                                                        callAction(`/reservations/${r.id}/cancel`);
+                                                    }
+                                                }}
+                                                className="text-sm text-red-500 hover:text-red-700 font-semibold underline"
+                                            >
+                                                Annuler
+                                            </button>
+                                        )}
+                                        {r.status === 'accepted' && !r.has_my_review && (
+                                            <Link
+                                                to={`/annonces/${r.annonce.id}`}
+                                                className="text-sm text-rose-500 hover:text-rose-700 font-semibold underline"
+                                            >
+                                                Laisser un avis
+                                            </Link>
+                                        )}
+                                        {r.has_my_review && (
+                                            <span className="text-sm text-gray-400">✓ Avis publié</span>
+                                        )}
+                                    </>
+                                }
+                            />
+                        ))
+                    )}
+                </div>
+
+                {reservations_recues.length > 0 && (
+                    <div>
+                        <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
+                            <span>🏠</span> Réservations reçues sur mes annonces
+                            <span className="text-sm font-normal text-gray-400">({reservations_recues.length})</span>
+                        </h2>
+
+                        {reservations_recues.map((r) => (
+                            <ReservationCard
+                                key={r.id}
+                                reservation={r}
+                                showTraveler
+                                actions={
+                                    r.status === 'pending' && (
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={() => callAction(`/reservations/${r.id}/accept`)}
+                                                className="bg-green-500 text-white px-4 py-1 rounded-lg text-sm font-semibold hover:bg-green-600 transition"
+                                            >
+                                                Accepter
+                                            </button>
+                                            <button
+                                                onClick={() => {
+                                                    if (confirm('Refuser cette réservation ?')) {
+                                                        callAction(`/reservations/${r.id}/refuse`);
+                                                    }
+                                                }}
+                                                className="bg-red-100 text-red-600 px-4 py-1 rounded-lg text-sm font-semibold hover:bg-red-200 transition"
+                                            >
+                                                Refuser
+                                            </button>
+                                        </div>
+                                    )
+                                }
+                            />
+                        ))}
+                    </div>
+                )}
+            </main>
+        </Layout>
+    );
+}
+
+function ReservationCard({ reservation: r, actions, showTraveler }) {
+    return (
+        <div className="bg-white rounded-2xl shadow-sm border mb-4 p-6 flex flex-col md:flex-row gap-6">
+            <div className="w-full md:w-36 h-28 rounded-xl overflow-hidden flex-shrink-0">
+                {r.annonce.image_url ? (
+                    <img src={r.annonce.image_url} alt={r.annonce.titre} className="w-full h-full object-cover" />
+                ) : (
+                    <div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-400 text-sm">
+                        Pas d'image
+                    </div>
+                )}
+            </div>
+
+            <div className="flex-1">
+                <Link to={`/annonces/${r.annonce.id}`} className="text-lg font-bold hover:text-rose-500 transition">
+                    {r.annonce.titre}
+                </Link>
+                {showTraveler ? (
+                    <p className="text-gray-500 text-sm">
+                        Voyageur : <strong>{r.traveler_name}</strong>
+                    </p>
+                ) : (
+                    <p className="text-gray-500 text-sm">{r.annonce.ville}</p>
+                )}
+                <p className="text-gray-600 text-sm mt-1">
+                    Du <strong>{formatDate(r.start_date)}</strong> au <strong>{formatDate(r.end_date)}</strong>
+                </p>
+                <p className="text-gray-600 text-sm">
+                    {r.nb_voyageurs} {r.nb_voyageurs === 1 ? 'voyageur' : 'voyageurs'} · Total : <strong>{r.total_price} MAD</strong>
+                </p>
+            </div>
+
+            <div className="flex flex-col items-end justify-between gap-3">
+                <span className={`px-3 py-1 rounded-full text-sm font-semibold ${STATUS_COLORS[r.status] || 'bg-gray-100 text-gray-500'}`}>
+                    {STATUS_LABELS[r.status] || r.status}
+                </span>
+                {actions}
+            </div>
+        </div>
+    );
+}

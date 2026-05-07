@@ -16,6 +16,8 @@ class Annonce extends Model
         'description',
         'adresse',
         'ville',
+        'latitude',
+        'longitude',
         'prix_par_nuit',
         'image',
         'nombre_de_chambres'
@@ -29,5 +31,10 @@ class Annonce extends Model
     public function reservations()
     {
         return $this->hasMany(Reservation::class);
+    }
+
+    public function images()
+    {
+        return $this->hasMany(AnnonceImage::class)->orderBy('position');
     }
 }
